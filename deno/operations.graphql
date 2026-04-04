@@ -1,0 +1,126 @@
+query Rooms($folder: String) {
+  rooms(folder: $folder) {
+    name
+    folder
+    description
+    position
+  }
+}
+
+mutation CreateRoom($name: String!, $folder: String, $description: String) {
+  createRoom(name: $name, folder: $folder, description: $description) {
+    name
+    folder
+    description
+    position
+  }
+}
+
+query Users {
+  users {
+    name
+    avatar
+  }
+}
+
+query Messages($room: String!) {
+  messages(room: $room) {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}
+
+mutation SendMessage($room: String!, $user: String!, $body: JSON!, $source: String, $streaming: Time) {
+  sendMessage(room: $room, user: $user, body: $body, source: $source, streaming: $streaming) {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}
+
+mutation EditMessage($id: ID!, $body: JSON!, $streaming: Time) {
+  editMessage(id: $id, body: $body, streaming: $streaming) {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}
+
+query UnreadCounts($user: String!) {
+  unreadCounts(user: $user) {
+    room
+    count
+  }
+}
+
+mutation MarkRead($room: String!, $user: String!, $messageID: ID!) {
+  markRead(room: $room, user: $user, messageID: $messageID)
+}
+
+mutation UpdateRoom($name: String!, $folder: String, $description: String) {
+  updateRoom(name: $name, folder: $folder, description: $description) {
+    name
+    folder
+    description
+    position
+  }
+}
+
+mutation DeleteRoom($name: String!, $folder: String) {
+  deleteRoom(name: $name, folder: $folder)
+}
+
+subscription MessageAdded($room: String!) {
+  messageAdded(room: $room) {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}
+
+subscription MessageAddedGlobal {
+  messageAdded {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}
+
+subscription MessageAddedByFolder($folder: String!) {
+  messageAdded(folder: $folder) {
+    id
+    room
+    user
+    body
+    timestamp
+    source
+    revision
+    streaming
+  }
+}

@@ -1,0 +1,244 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-terminal-green: var(--terminal-green);
+  --color-terminal-dim: var(--terminal-dim);
+  --color-terminal-cyan: var(--terminal-cyan);
+  --color-terminal-yellow: var(--terminal-yellow);
+  --color-editor-active-bg: var(--editor-active-bg);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --font-mono: "Iosevka", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+}
+
+:root {
+  --background: #0a0e14;
+  --foreground: #b0b8c8;
+  --card: #0d1117;
+  --card-foreground: #b0b8c8;
+  --popover: #0d1117;
+  --popover-foreground: #b0b8c8;
+  --primary: #6cb6ff;
+  --primary-foreground: #0a0e14;
+  --secondary: #131920;
+  --secondary-foreground: #8a95a6;
+  --muted: #131920;
+  --muted-foreground: #505a6a;
+  --accent: #141c24;
+  --accent-foreground: #c0c8d8;
+  --destructive: #e05252;
+  --destructive-foreground: #0a0e14;
+  --border: #1a2430;
+  --input: #131920;
+  --ring: #6cb6ff;
+  --radius: 0px;
+  --sidebar: #080c10;
+  --sidebar-foreground: #8a95a6;
+  --sidebar-accent: #111820;
+  --sidebar-accent-foreground: #6cb6ff;
+  --sidebar-border: #1a2430;
+  --terminal-green: #6cb6ff;
+  --terminal-dim: #1a2d42;
+  --terminal-cyan: #89d4f5;
+  --terminal-yellow: #e0c856;
+  --editor-active-bg: #172536;
+}
+
+* {
+  border-color: var(--border);
+}
+
+/* Markdown prose styles for chat messages */
+.prose-chat p {
+  margin: 0.25em 0;
+}
+.prose-chat p:first-child {
+  margin-top: 0;
+}
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+.prose-chat pre {
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.6em 0.8em;
+  margin: 0.4em 0;
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+.prose-chat code {
+  background-color: var(--muted);
+  padding: 0.15em 0.35em;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+  color: var(--terminal-cyan);
+}
+.prose-chat pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+.prose-chat a {
+  color: var(--terminal-cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-chat a:hover {
+  color: var(--terminal-green);
+}
+.prose-chat blockquote {
+  border-left: 2px solid var(--terminal-dim);
+  padding-left: 0.8em;
+  margin: 0.4em 0;
+  color: var(--muted-foreground);
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.3em 0;
+  padding-left: 1.5em;
+}
+.prose-chat ul {
+  list-style-type: disc;
+}
+.prose-chat ol {
+  list-style-type: decimal;
+}
+.prose-chat li {
+  margin: 0.1em 0;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4,
+.prose-chat h5,
+.prose-chat h6 {
+  margin: 0.5em 0 0.25em;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--terminal-green);
+}
+.prose-chat h1 { font-size: 1.25em; }
+.prose-chat h2 { font-size: 1.15em; }
+.prose-chat h3 { font-size: 1.05em; }
+.prose-chat hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5em 0;
+}
+.prose-chat table {
+  border-collapse: collapse;
+  margin: 0.4em 0;
+  font-size: 0.9em;
+}
+.prose-chat th,
+.prose-chat td {
+  border: 1px solid var(--border);
+  padding: 0.3em 0.6em;
+}
+.prose-chat th {
+  background-color: var(--muted);
+  font-weight: 600;
+}
+.prose-chat img {
+  max-width: 100%;
+}
+.streaming-msg > p:last-of-type {
+  display: inline;
+}
+
+/* ANSI escape code rendered messages */
+/* ansi-to-pre outputs a <pre> inside our wrapper <div> */
+.ansi-message {
+  max-width: fit-content;
+  margin: 0.2em 0;
+}
+.ansi-message pre {
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.6em 0.8em;
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.2;
+  white-space: pre;
+}
+.ansi-message pre * {
+  font-family: inherit !important;
+}
+
+/* Make Radix ScrollArea viewport inner wrapper fill height so flex justify-end works */
+[data-slot="scroll-area-viewport"] > div {
+  min-height: 100%;
+  display: flex !important;
+  flex-direction: column;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Iosevka", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  font-size: var(--text-base);
+  --text-base: 16px;
+  --text-sm: 14px;
+  --text-xs: 12px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editor active background - highlight entire send form on focus */
+.send-form-wrap:focus-within {
+  background-color: var(--editor-active-bg);
+}
+
+/* Scrollbar styling for terminal feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Selection color */
+::selection {
+  background: var(--terminal-dim);
+  color: #c0daf0;
+}

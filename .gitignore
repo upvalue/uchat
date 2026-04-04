@@ -1,0 +1,111 @@
+# ===== Go =====
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace file
+go.work
+go.work.sum
+
+# ===== Node =====
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional caches
+.npm
+.eslintcache
+.stylelintcache
+.cache
+.parcel-cache
+
+# Output of 'npm pack'
+*.tgz
+
+# pnpm
+.pnpm-store
+
+# Vite files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+.vite/
+
+# ===== Environment =====
+.env
+.env.*
+!.env.example
+
+# ===== Editor/IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Project-specific =====
+
+# Compiled Go binary
+/uchat
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Frontend build output
+web/dist/
+
+# Generated code - GraphQL (frontend)
+src/generated/
+
+# Generated code - TanStack Router
+src/routeTree.gen.ts
+
+# Generated code - gqlgen (backend)
+graph/generated.go
+
+# Generated code - Deno GraphQL client
+deno/_generated.ts
+
+# TanStack temp files
+.tanstack/
+
+# Pi coding agent
+.pi/
+
+/Justfile
+/_NOTE.md
+
+/data
+
+/ubot
+/config.toml

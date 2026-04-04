@@ -1,0 +1,50 @@
+scalar Time
+scalar JSON
+
+type Message {
+  id: ID!
+  room: String!
+  user: String!
+  body: JSON!
+  timestamp: Time!
+  source: String!
+  revision: Int!
+  streaming: Time
+}
+
+type Room {
+  name: String!
+  folder: String
+  description: String
+  position: Int!
+}
+
+type User {
+  name: String!
+  avatar: String
+}
+
+type UnreadCount {
+  room: String!
+  count: Int!
+}
+
+type Query {
+  rooms(folder: String): [Room!]!
+  messages(room: String!): [Message!]!
+  users: [User!]!
+  unreadCounts(user: String!): [UnreadCount!]!
+}
+
+type Mutation {
+  createRoom(name: String!, folder: String, description: String): Room!
+  sendMessage(room: String!, user: String!, body: JSON!, source: String, streaming: Time): Message!
+  editMessage(id: ID!, body: JSON!, streaming: Time): Message!
+  markRead(room: String!, user: String!, messageID: ID!): Boolean!
+  updateRoom(name: String!, folder: String, description: String): Room!
+  deleteRoom(name: String!, folder: String): Boolean!
+}
+
+type Subscription {
+  messageAdded(room: String, folder: String): Message!
+}

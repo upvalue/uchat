@@ -1,0 +1,27 @@
+schema:
+  - schema.graphql
+
+exec:
+  filename: generated.go
+  package: graph
+
+model:
+  filename: model.go
+  package: graph
+
+resolver:
+  layout: follow-schema
+  dir: .
+  package: graph
+
+models:
+  Message:
+    model: uchat/chat.Message
+  UnreadCount:
+    model: uchat/chat.UnreadCount
+  JSON:
+    model:
+      - uchat/chat.Body
+  Time:
+    model:
+      - uchat/chat.Timestamp
