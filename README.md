@@ -1,5 +1,8 @@
 # uchat
 
+![uchat screenshot 1](.github/readme/uchat1.png)
+![uchat screenshot 2](.github/readme/uchat2.png)
+
 uchat is a simple chat backend intended for use as the bridge of a simple
 chatops system with a single human user and N machine users (which may be LLMs
 or just regular processes).
