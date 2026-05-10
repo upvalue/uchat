@@ -4,6 +4,8 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -14,31 +16,56 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
+// maxOpenConns bounds the SQLite connection pool. In WAL mode many readers can
+// run concurrently alongside a single writer, so a pool lets read queries (room
+// lists, message history, unread counts) proceed without queueing behind
+// writes. Writers still serialize at the SQLite level (with busy_timeout).
+const maxOpenConns = 16
+
 type Store struct {
 	db *sqlx.DB
 }
 
 func NewStore(dbPath string) (*Store, error) {
-	db, err := sqlx.Open("sqlite", dbPath)
+	inMemory := strings.Contains(dbPath, ":memory:")
+
+	dsn := dbPath
+	if !inMemory {
+		// Pass pragmas through the DSN so modernc.org/sqlite applies them to
+		// *every* pooled connection. A bare "PRAGMA ..." only affects the one
+		// connection it runs on, and busy_timeout / synchronous / foreign_keys
+		// are per-connection state.
+		dsn = pragmaDSN(dbPath)
+	}
+
+	db, err := sqlx.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
-	// SQLite only supports one writer; a pool of connections causes SQLITE_BUSY
-	// since pragmas (busy_timeout, journal_mode) are per-connection and won't
-	// apply to other connections in the pool.
-	db.SetMaxOpenConns(1)
+
+	if inMemory {
+		// An in-memory database lives inside a single connection; a larger pool
+		// would hand out connections each backed by their own empty database.
+		db.SetMaxOpenConns(1)
+	} else {
+		db.SetMaxOpenConns(maxOpenConns)
+		db.SetMaxIdleConns(maxOpenConns)
+		db.SetConnMaxIdleTime(5 * time.Minute)
+	}
+
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("connecting to database: %w", err)
 	}
 
-	// Set pragmas explicitly (modernc.org/sqlite ignores DSN-style pragma params).
-	for _, pragma := range []string{
-		"PRAGMA journal_mode=WAL",
-		"PRAGMA busy_timeout=5000",
-		"PRAGMA foreign_keys=ON",
-	} {
-		if _, err := db.Exec(pragma); err != nil {
-			return nil, fmt.Errorf("%s: %w", pragma, err)
+	if inMemory {
+		// Single-connection pool, so a plain PRAGMA reaches every query.
+		for _, pragma := range []string{
+			"PRAGMA busy_timeout=10000",
+			"PRAGMA foreign_keys=ON",
+		} {
+			if _, err := db.Exec(pragma); err != nil {
+				return nil, fmt.Errorf("%s: %w", pragma, err)
+			}
 		}
 	}
 
@@ -47,6 +74,55 @@ func NewStore(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 	return s, nil
+}
+
+// pragmaDSN builds a modernc.org/sqlite DSN ("file:<path>?_pragma=...") that
+// applies our connection pragmas to every connection in the pool.
+func pragmaDSN(dbPath string) string {
+	q := url.Values{}
+	for _, pragma := range []string{
+		"busy_timeout(10000)",
+		"journal_mode(WAL)",
+		"synchronous(NORMAL)", // safe under WAL; avoids an fsync per write
+		"foreign_keys(ON)",
+	} {
+		q.Add("_pragma", pragma)
+	}
+	return "file:" + dbPath + "?" + q.Encode()
+}
+
+// withImmediateTx runs fn inside a "BEGIN IMMEDIATE" transaction on a dedicated
+// connection. IMMEDIATE takes the write lock up front, so concurrent writers
+// queue cleanly on busy_timeout rather than risking a mid-transaction deadlock
+// (two deferred transactions each holding a read lock and then trying to
+// upgrade to the write lock).
+func (s *Store) withImmediateTx(ctx context.Context, fn func(*sqlx.Conn) error) (retErr error) {
+	conn, err := s.db.Connx(ctx)
+	if err != nil {
+		return fmt.Errorf("acquiring connection: %w", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
+		return fmt.Errorf("begin immediate: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			// ctx may already be cancelled; roll back with a fresh one.
+			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
+		}
+	}()
+
+	if err := fn(conn); err != nil {
+		return err
+	}
+
+	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	committed = true
+	return nil
 }
 
 func (s *Store) migrate() error {
@@ -126,15 +202,14 @@ func (r RoomRow) Path() string {
 
 func (s *Store) CreateRoom(ctx context.Context, name string, folder string, description *string) (RoomRow, error) {
 	now := time.Now().UTC().Format(timestampFormat)
-	var pos int
-	err := s.db.GetContext(ctx, &pos, `SELECT COALESCE(MAX(position), -1) + 1 FROM rooms`)
-	if err != nil {
-		return RoomRow{}, fmt.Errorf("getting next position: %w", err)
-	}
-	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO rooms (folder, name, description, position, created_at) VALUES (?, ?, ?, ?, ?)
+	// Compute the next position inside the INSERT itself: the statement runs
+	// under SQLite's write lock, so concurrent CreateRoom calls can't collide on
+	// the same position (a separate SELECT-then-INSERT could).
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO rooms (folder, name, description, position, created_at)
+		 VALUES (?, ?, ?, COALESCE((SELECT MAX(position) FROM rooms), -1) + 1, ?)
 		 ON CONFLICT (folder, name) DO UPDATE SET description = COALESCE(excluded.description, rooms.description)`,
-		folder, name, description, pos, now,
+		folder, name, description, now,
 	)
 	if err != nil {
 		return RoomRow{}, fmt.Errorf("creating room: %w", err)
@@ -182,27 +257,23 @@ func (s *Store) UpdateRoom(ctx context.Context, name string, folder string, desc
 
 func (s *Store) DeleteRoom(ctx context.Context, name string, folder string) error {
 	path := RoomPath(folder, name)
-	tx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM read_markers WHERE room = ?`, path); err != nil {
-		return fmt.Errorf("deleting read markers: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM messages WHERE room = ?`, path); err != nil {
-		return fmt.Errorf("deleting messages: %w", err)
-	}
-	res, err := tx.ExecContext(ctx, `DELETE FROM rooms WHERE folder = ? AND name = ?`, folder, name)
-	if err != nil {
-		return fmt.Errorf("deleting room: %w", err)
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("room not found")
-	}
-	return tx.Commit()
+	return s.withImmediateTx(ctx, func(c *sqlx.Conn) error {
+		if _, err := c.ExecContext(ctx, `DELETE FROM read_markers WHERE room = ?`, path); err != nil {
+			return fmt.Errorf("deleting read markers: %w", err)
+		}
+		if _, err := c.ExecContext(ctx, `DELETE FROM messages WHERE room = ?`, path); err != nil {
+			return fmt.Errorf("deleting messages: %w", err)
+		}
+		res, err := c.ExecContext(ctx, `DELETE FROM rooms WHERE folder = ? AND name = ?`, folder, name)
+		if err != nil {
+			return fmt.Errorf("deleting room: %w", err)
+		}
+		n, _ := res.RowsAffected()
+		if n == 0 {
+			return fmt.Errorf("room not found")
+		}
+		return nil
+	})
 }
 
 func (s *Store) MarkRead(ctx context.Context, room, user, messageID string) error {
