@@ -79,6 +79,15 @@ function ToolCallsBlock({ toolCalls }: { toolCalls: ToolCallInfo[] }) {
   );
 }
 
+function ErrorBlock({ message }: { message: string }) {
+  return (
+    <div className="my-1.5 rounded border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-xs font-mono text-destructive">
+      <div className="mb-1 font-semibold">[error] inference failed</div>
+      <pre className="whitespace-pre-wrap break-words text-destructive/90">{message}</pre>
+    </div>
+  );
+}
+
 function RunningSpinner() {
   const [frame, setFrame] = useState(0);
   useEffect(() => {
@@ -253,10 +262,21 @@ export function MessageList({ room, onLastMessage, scrollToBottomSeq }: { room: 
           {messages.map((msg, i) => {
           const prev = messages[i - 1];
           const showHeader = !prev || prev.user !== msg.user;
+          const isError =
+            typeof msg.body === "object" && msg.body !== null && msg.body.error === true;
+          const errorMessage =
+            isError && typeof msg.body.errorMessage === "string"
+              ? msg.body.errorMessage
+              : isError
+                ? "(no error message provided)"
+                : null;
+
           const bodyText =
             typeof msg.body === "object" && msg.body !== null && "body" in msg.body
               ? String(msg.body.body)
-              : JSON.stringify(msg.body);
+              : isError
+                ? ""
+                : JSON.stringify(msg.body);
 
           const toolCalls = (
             typeof msg.body === "object" && msg.body !== null && Array.isArray(msg.body.toolCalls)
@@ -294,9 +314,10 @@ export function MessageList({ room, onLastMessage, scrollToBottomSeq }: { room: 
                 <div className={`prose-chat leading-relaxed text-foreground/90${isStreaming(msg.streaming) ? ' streaming-msg' : ''}`}>
                   {msg.body?.format === "ansi" ? (
                     <AnsiMessage text={bodyText} cols={msg.body?.cols as number | undefined} />
-                  ) : (
+                  ) : bodyText ? (
                     <Markdown remarkPlugins={[remarkGfm]}>{bodyText}</Markdown>
-                  )}
+                  ) : null}
+                  {isError && errorMessage != null && <ErrorBlock message={errorMessage} />}
                   {isStreaming(msg.streaming) && <StreamingSpinner />}
                 </div>
               </div>

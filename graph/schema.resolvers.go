@@ -173,6 +173,15 @@ func (r *queryResolver) UnreadCounts(ctx context.Context, user string) ([]*chat.
 	return ptrs, nil
 }
 
+// Instance is the resolver for the instance field.
+func (r *queryResolver) Instance(ctx context.Context) (*Instance, error) {
+	title := "uchat"
+	if r.Config != nil && r.Config.Title != "" {
+		title = r.Config.Title
+	}
+	return &Instance{Title: title}, nil
+}
+
 // MessageAdded is the resolver for the messageAdded field.
 func (r *subscriptionResolver) MessageAdded(ctx context.Context, room *string, folder *string) (<-chan *chat.Message, error) {
 	if room != nil {
@@ -239,4 +248,3 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-

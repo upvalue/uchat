@@ -9,6 +9,7 @@ import {
   UsersDocument,
   UnreadCountsDocument,
   MarkReadDocument,
+  InstanceDocument,
 } from "../generated/graphql";
 
 export {
@@ -22,4 +23,5 @@ export {
   UsersDocument as UsersQuery,
   UnreadCountsDocument as UnreadCountsQuery,
   MarkReadDocument as MarkReadMutation,
+  InstanceDocument as InstanceQuery,
 };

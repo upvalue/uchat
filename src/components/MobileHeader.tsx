@@ -1,5 +1,6 @@
 import { useMatchRoute } from "@tanstack/react-router";
 import { Menu, Settings, X } from "lucide-react";
+import { useInstance } from "../lib/useInstance";
 
 interface MobileHeaderProps {
   sidebarOpen: boolean;
@@ -8,13 +9,14 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ sidebarOpen, onToggleSidebar }: MobileHeaderProps) {
   const matchRoute = useMatchRoute();
+  const instanceTitle = useInstance();
 
   // Try to extract current room name
   const roomMatch = matchRoute({ to: "/rooms/$room", params: {} as any });
   const roomName = roomMatch ? (roomMatch as { room?: string }).room : null;
   const configMatch = matchRoute({ to: "/config" });
 
-  let title = "uchat";
+  let title = instanceTitle;
   if (roomName) title = `#${roomName}`;
   else if (configMatch) title = "config";
 

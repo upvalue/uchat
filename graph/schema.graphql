@@ -29,11 +29,16 @@ type UnreadCount {
   count: Int!
 }
 
+type Instance {
+  title: String!
+}
+
 type Query {
   rooms(folder: String): [Room!]!
   messages(room: String!): [Message!]!
   users: [User!]!
   unreadCounts(user: String!): [UnreadCount!]!
+  instance: Instance!
 }
 
 type Mutation {

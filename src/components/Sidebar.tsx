@@ -6,6 +6,7 @@ import { getGraphQLClient } from "../lib/graphql";
 import { RoomsQuery } from "../lib/queries";
 import { cn } from "@/lib/utils";
 import { useUnread } from "../lib/useUnread";
+import { useInstance } from "../lib/useInstance";
 import { CreateChannelButton } from "./CreateChannelDialog";
 import { roomPath } from "@/lib/chatroom";
 import { ChannelSettingsDialog } from "./ChannelSettingsDialog";
@@ -50,6 +51,7 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const matchRoute = useMatchRoute();
   const { unreadMap } = useUnread();
+  const title = useInstance();
   const [settingsTarget, setSettingsTarget] = useState<RoomItem | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["rooms"],
@@ -67,7 +69,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       {/* Brand */}
       <div className="flex items-center gap-2 px-4 py-3">
         <span className="text-terminal-green font-bold">$</span>
-        <span className="font-bold tracking-tight text-terminal-green">uchat</span>
+        <span className="font-bold tracking-tight text-terminal-green">{title}</span>
       </div>
 
       {/* Channels header */}

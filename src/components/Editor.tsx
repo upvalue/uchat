@@ -26,7 +26,11 @@ const uchatTheme = EditorView.theme({
   },
   ".cm-cursor": {
     borderLeftColor: "var(--terminal-cyan)",
-    borderLeftWidth: "2px",
+    borderLeftWidth: "0.55em",
+    opacity: "0.5",
+  },
+  "&.cm-focused .cm-cursor": {
+    opacity: "0.6",
   },
   ".cm-selectionBackground": {
     backgroundColor: "var(--terminal-dim) !important",

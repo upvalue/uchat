@@ -2,6 +2,10 @@
 
 package graph
 
+type Instance struct {
+	Title string `json:"title"`
+}
+
 type Mutation struct {
 }
 

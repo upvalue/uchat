@@ -12,6 +12,7 @@ type UserConfig struct {
 }
 
 type Config struct {
+	Title string                `toml:"title"`
 	Users map[string]UserConfig `toml:"users"`
 }
 

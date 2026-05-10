@@ -1,3 +1,9 @@
+query Instance {
+  instance {
+    title
+  }
+}
+
 query Rooms($folder: String) {
   rooms(folder: $folder) {
     name

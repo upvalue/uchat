@@ -5,6 +5,7 @@ import { ChannelSwitcher } from "../components/ChannelSwitcher";
 import { MobileHeader } from "../components/MobileHeader";
 import { getConfig } from "../lib/config";
 import { useUnread } from "../lib/useUnread";
+import { useInstance } from "../lib/useInstance";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -14,6 +15,7 @@ function RootLayout() {
   const navigate = useNavigate();
   const config = getConfig();
   const { totalUnread } = useUnread();
+  const instanceTitle = useInstance();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const matchRoute = useMatchRoute();
 
@@ -25,9 +27,8 @@ function RootLayout() {
 
   // Update document title with unread count
   useEffect(() => {
-    const base = document.title.replace(/^\(\d+\+?\)\s*/, "");
-    document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
-  }, [totalUnread]);
+    document.title = totalUnread > 0 ? `(${totalUnread}) ${instanceTitle}` : instanceTitle;
+  }, [totalUnread, instanceTitle]);
 
   // Close mobile sidebar on route change
   const roomMatch = matchRoute({ to: "/rooms/$room", params: {} as any });

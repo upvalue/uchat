@@ -56,7 +56,7 @@ export function SendForm({ room, onSent }: { room: string; onSent?: () => void }
         <div className="flex-1">
           <Editor
             ref={editorRef}
-            placeholder={`msg #${room}`}
+            placeholder={`msg #${room} — press / to focus`}
             onSubmit={handleSubmit}
             disabled={mutation.isPending}
           />
