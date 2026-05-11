@@ -7,6 +7,8 @@ package graph
 
 import (
 	"context"
+	"log/slog"
+
 	"uchat/chat"
 )
 
@@ -28,6 +30,7 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, name string, folder *
 	if err != nil {
 		return nil, err
 	}
+	slog.Info("room created", "room", row.Name, "folder", row.Folder)
 	return &Room{Name: row.Name, Folder: ptrIfNonEmpty(row.Folder), Description: row.Description, Position: row.Position}, nil
 }
 
@@ -48,6 +51,14 @@ func (r *mutationResolver) SendMessage(ctx context.Context, room string, user st
 	}
 	folder, _ := chat.ParseRoomPath(room)
 	r.Broker.Publish(room, folder, msg)
+	slog.Info("message sent",
+		"id", msg.ID,
+		"room", room,
+		"user", msg.User,
+		"source", msg.Source,
+		"bytes", len(msg.Body.Text()),
+		"streaming", msg.Streaming != nil,
+	)
 	return &msg, nil
 }
 
@@ -62,6 +73,18 @@ func (r *mutationResolver) EditMessage(ctx context.Context, id string, body chat
 	}
 	folder, _ := chat.ParseRoomPath(msg.Room)
 	r.Broker.Publish(msg.Room, folder, *msg)
+	// Skip per-chunk noise: only log when the edit isn't a streaming
+	// update (i.e. the message has reached its final state, or it's a
+	// plain edit by a human).
+	if streaming == nil {
+		slog.Info("message edited",
+			"id", msg.ID,
+			"room", msg.Room,
+			"user", msg.User,
+			"revision", msg.Revision,
+			"bytes", len(msg.Body.Text()),
+		)
+	}
 	return msg, nil
 }
 
@@ -94,6 +117,7 @@ func (r *mutationResolver) UpdateRoom(ctx context.Context, name string, folder *
 	if err != nil {
 		return nil, err
 	}
+	slog.Info("room updated", "room", row.Name, "folder", row.Folder)
 	return &Room{Name: row.Name, Folder: ptrIfNonEmpty(row.Folder), Description: row.Description, Position: row.Position}, nil
 }
 
@@ -114,6 +138,7 @@ func (r *mutationResolver) DeleteRoom(ctx context.Context, name string, folder *
 	if err := r.Store.DeleteRoom(ctx, name, f); err != nil {
 		return false, err
 	}
+	slog.Info("room deleted", "room", name, "folder", f)
 	return true, nil
 }
 
@@ -194,9 +219,11 @@ func (r *subscriptionResolver) MessageAdded(ctx context.Context, room *string, f
 	if folder != nil && *folder != "" {
 		sub := r.Broker.SubscribeFolder(*folder)
 		ch := make(chan *chat.Message, 64)
+		slog.Info("subscription opened", "folder", *folder)
 		go func() {
 			defer r.Broker.UnsubscribeFolder(*folder, sub)
 			defer close(ch)
+			defer slog.Info("subscription closed", "folder", *folder)
 			for {
 				select {
 				case msg, ok := <-sub.Messages():
@@ -218,9 +245,11 @@ func (r *subscriptionResolver) MessageAdded(ctx context.Context, room *string, f
 	}
 	sub := r.Broker.Subscribe(roomStr)
 	ch := make(chan *chat.Message, 64)
+	slog.Info("subscription opened", "room", roomStr)
 	go func() {
 		defer r.Broker.Unsubscribe(roomStr, sub)
 		defer close(ch)
+		defer slog.Info("subscription closed", "room", roomStr)
 		for {
 			select {
 			case msg, ok := <-sub.Messages():

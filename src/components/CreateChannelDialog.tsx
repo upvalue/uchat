@@ -1,21 +1,40 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, Clock } from "lucide-react";
 import { getGraphQLClient } from "../lib/graphql";
 import { CreateRoomMutation, RoomsQuery } from "../lib/queries";
 import { cn } from "@/lib/utils";
 import { chatroomTitle, roomPath } from "@/lib/chatroom";
 
-export function CreateChannelButton({ defaultFolder }: { defaultFolder?: string } = {}) {
+export function CreateChannelButton({
+  defaultFolder,
+  global,
+}: { defaultFolder?: string; global?: boolean } = {}) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!global) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "c" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (target?.isContentEditable) return;
+      if (target?.closest?.(".editor-wrap")) return;
+      e.preventDefault();
+      setOpen(true);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [global]);
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
         className="text-muted-foreground transition-colors hover:text-terminal-green"
-        title="Create channel"
+        title={global ? "Create channel (c)" : "Create channel"}
       >
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -32,6 +51,12 @@ function CreateChannelDialog({ onClose, defaultFolder }: { onClose: () => void; 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  function fillDetailedTimestamp() {
+    setName(chatroomTitle({ detailed: true }));
+    setError("");
+    requestAnimationFrame(() => nameInputRef.current?.focus());
+  }
 
   const { data: roomsData } = useQuery({
     queryKey: ["rooms"],
@@ -166,6 +191,15 @@ function CreateChannelDialog({ onClose, defaultFolder }: { onClose: () => void; 
                   )}
                 />
               </div>
+              <button
+                type="button"
+                onClick={fillDetailedTimestamp}
+                title="Replace name with YYYY-MM-DD HHMMSS"
+                className="mt-2 inline-flex items-center gap-1.5 border border-border bg-background px-2 py-0.5 text-muted-foreground transition-colors hover:border-terminal-green/50 hover:bg-terminal-green/10 hover:text-terminal-green"
+              >
+                <Clock className="h-3 w-3" aria-hidden />
+                <span>use detailed timestamp</span>
+              </button>
             </div>
             {/* Description input */}
             <div>

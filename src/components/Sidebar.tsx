@@ -77,7 +77,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         <span className="font-semibold uppercase tracking-widest text-muted-foreground">
           # channels
         </span>
-        <CreateChannelButton />
+        <CreateChannelButton global />
       </div>
 
       {/* Channel list */}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"uchat/chat"
@@ -148,7 +149,7 @@ func serveAction(c *cli.Context) error {
 	defer store.Close()
 	broker := chat.NewBroker()
 	addr := c.String("addr")
-	fmt.Printf("uchat server listening on %s\n", addr)
+	slog.Info("uchat server starting", "addr", addr, "db", c.String("db"), "data", dataPath)
 	return server.New(store, broker, cfg, dataPath).Listen(addr)
 }
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MessageList } from "../../components/MessageList";
 import { SendForm } from "../../components/SendForm";
+import { DeleteChannelButton } from "../../components/DeleteChannelButton";
 import { useUnread } from "../../lib/useUnread";
 import { getGraphQLClient } from "../../lib/graphql";
 import { RoomsQuery } from "../../lib/queries";
@@ -47,6 +48,15 @@ function RoomPage() {
             <span className="truncate text-sm text-muted-foreground" style={{ maxWidth: "255ch" }}>
               {roomDescription}
             </span>
+          )}
+          {roomInfo && (
+            <div className="ml-auto shrink-0">
+              <DeleteChannelButton
+                name={roomInfo.name}
+                folder={roomInfo.folder}
+                isActive
+              />
+            </div>
           )}
         </div>
       </div>
