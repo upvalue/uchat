@@ -7,6 +7,7 @@ import { UserAvatar } from "./UserAvatar";
 import { getGraphQLClient } from "../lib/graphql";
 import { MessagesQuery, UsersQuery } from "../lib/queries";
 import { useMessageSubscription } from "../lib/useSubscription";
+import { formatHeaderTime, isSameDay, startsNewBunch } from "../lib/messageGrouping";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MessageItem {
@@ -261,7 +262,8 @@ export function MessageList({ room, onLastMessage, scrollToBottomSeq }: { room: 
         <div className="mt-auto space-y-0 px-2 py-3 md:px-4">
           {messages.map((msg, i) => {
           const prev = messages[i - 1];
-          const showHeader = !prev || prev.user !== msg.user;
+          const showHeader = startsNewBunch(prev, msg);
+          const showDateInHeader = showHeader && !!prev && !isSameDay(prev.timestamp, msg.timestamp);
           const isError =
             typeof msg.body === "object" && msg.body !== null && msg.body.error === true;
           const errorMessage =
@@ -299,11 +301,7 @@ export function MessageList({ room, onLastMessage, scrollToBottomSeq }: { room: 
                   <div className="mb-0.5 flex items-baseline gap-2">
                     <span className="font-semibold text-terminal-green">{msg.user}</span>
                     <span className="text-muted-foreground">
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
+                      {formatHeaderTime(msg.timestamp, showDateInHeader)}
                     </span>
                     {msg.source === "api" && (
                       <span className="text-terminal-cyan">[api]</span>
