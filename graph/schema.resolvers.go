@@ -10,6 +10,7 @@ import (
 	"log/slog"
 
 	"uchat/chat"
+	"uchat/identity"
 )
 
 // CreateRoom is the resolver for the createRoom field.
@@ -51,6 +52,7 @@ func (r *mutationResolver) SendMessage(ctx context.Context, room string, user st
 	}
 	folder, _ := chat.ParseRoomPath(room)
 	r.Broker.Publish(room, folder, msg)
+	machine, _ := identity.FromContext(ctx)
 	slog.Info("message sent",
 		"id", msg.ID,
 		"room", room,
@@ -58,6 +60,10 @@ func (r *mutationResolver) SendMessage(ctx context.Context, room string, user st
 		"source", msg.Source,
 		"bytes", len(msg.Body.Text()),
 		"streaming", msg.Streaming != nil,
+		"tailscale_matched", machine != nil && machine.Matched,
+		"tailscale_machine", machineName(machine),
+		"tailscale_ip", machineIP(machine),
+		"tailscale_tags", machineTags(machine),
 	)
 	return &msg, nil
 }
@@ -277,3 +283,24 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+func machineName(machine *identity.Machine) string {
+	if machine == nil {
+		return ""
+	}
+	return machine.Name
+}
+
+func machineIP(machine *identity.Machine) string {
+	if machine == nil {
+		return ""
+	}
+	return machine.IP
+}
+
+func machineTags(machine *identity.Machine) []string {
+	if machine == nil {
+		return nil
+	}
+	return machine.Tags
+}

@@ -11,9 +11,21 @@ type UserConfig struct {
 	Avatar string `toml:"avatar"`
 }
 
+type ACLRule struct {
+	Machines []string `toml:"machines"`
+	Tags     []string `toml:"tags"`
+	Rooms    []string `toml:"rooms"`
+}
+
+type ACLConfig struct {
+	FallbackRooms []string  `toml:"fallback_rooms"`
+	Rules         []ACLRule `toml:"rules"`
+}
+
 type Config struct {
 	Title string                `toml:"title"`
 	Users map[string]UserConfig `toml:"users"`
+	ACL   ACLConfig             `toml:"acl"`
 }
 
 func Load(path string) (*Config, error) {
